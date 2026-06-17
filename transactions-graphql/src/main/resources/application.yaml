@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: transactions-graphql
+  graphql:
+    graphiql:
+      enabled: true
+
+server:
+  port: 8082

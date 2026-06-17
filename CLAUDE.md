@@ -8,3 +8,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Before writing any code**, you MUST read the relevant documentation file(s) in the `/docs` directory. Every piece of code you generate must be grounded in those docs. Do not rely on training data or assumptions — read the doc, then write the code:
 
+- [README Maintenance Standards](docs/readme-maintenance.md) — when and how to update the root-level README
+
