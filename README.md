@@ -2,6 +2,28 @@
 
 A proof-of-concept exploring GraphQL Federation with Spring Boot. Subgraph services and a REST API expose data that can be queried through either the Spring-based gateway or Apollo Router.
 
+## Architecture
+
+```
+                         ┌──────────┐
+                         │  Client  │
+                         └────┬─────┘
+                              │
+                   ┌──────────▼──────────┐
+                   │    Apollo Router    │  :4000
+                   └──┬────┬──────┬──┬───┘
+                      │    │      │  │
+     ┌────────────────┘    │      │  └────────────────┐
+     │                 ┌───┘      └───┐               │ @connect (HTTP)
+     │                 │              │               │
+     ▼                 ▼              ▼               ▼
+┌──────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ accounts │ │transactions  │ │notifications │ │  cards-rest  │
+│ graphql  │ │  graphql     │ │  graphql     │ │  (REST API)  │
+│  :8081   │ │  :8082       │ │  :8084       │ │   :8083      │
+└──────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+```
+
 ## Services
 
 | Service | Port | Description |
@@ -9,9 +31,8 @@ A proof-of-concept exploring GraphQL Federation with Spring Boot. Subgraph servi
 | `accounts-graphql` | 8081 | Accounts subgraph — owns the `Account` entity |
 | `transactions-graphql` | 8082 | Transactions subgraph — owns `Transaction`, extends `Account` with `transactions`, references `Card` entity |
 | `cards-rest` | 8083 | Cards REST API — serves card data linked to accounts |
+| `notifications-graphql` | 8084 | Notifications subgraph — owns `Notification`, contributes `notifications` to `Account`, exposes a `notificationAdded` subscription |
 | `apollo-router` | 4000 | Apollo Router — federation router that composes the GraphQL subgraphs |
-
-`Account.id` is the federation join key: the router uses it to navigate between accounts, transactions, and cards.
 
 ## Running
 
@@ -35,6 +56,12 @@ cd cards-rest
 ./gradlew bootRun
 ```
 
+**Notifications subgraph**
+```bash
+cd notifications-graphql
+./gradlew bootRun
+```
+
 **Apollo Router**
 ```bash
 cd apollo-router
@@ -43,6 +70,8 @@ cd apollo-router
 
 `start.sh` composes the supergraph from the subgraph SDL files and starts the router. The Apollo Router binary is downloaded automatically on first run.
 
+> **GraphOS credentials required** — federated subscriptions require a GraphOS Developer plan or above. Set `APOLLO_KEY` and `APOLLO_GRAPH_REF` before running `start.sh`. See [GraphOS credentials](#graphos-credentials) below.
+
 ## Interactive querying
 
 Apollo Router serves Apollo Sandbox at http://localhost:4000
@@ -50,6 +79,7 @@ Apollo Router serves Apollo Sandbox at http://localhost:4000
 The subgraphs also expose GraphiQL directly:
 - Accounts: http://localhost:8081/graphiql
 - Transactions: http://localhost:8082/graphiql
+- Notifications: http://localhost:8084/graphiql
 
 ## Example Queries
 
@@ -154,6 +184,45 @@ query {
 }
 ```
 
+**Notifications for an account (cross-service)**
+```graphql
+query {
+  account(id: "acc-1") {
+    name
+    notifications {
+      id
+      message
+      type
+      timestamp
+    }
+  }
+}
+```
+
+**Live notification stream (subscription)**
+
+A random notification is pushed every 10 seconds. The `account` field is resolved by the accounts subgraph via entity lookup, so the full cross-subgraph chain is available in a single subscription.
+```graphql
+subscription {
+  notificationAdded {
+    id
+    message
+    type
+    timestamp
+    account {
+      name
+      email
+      balance
+      transactions {
+        amount
+        description
+        card { lastFour }
+      }
+    }
+  }
+}
+```
+
 ## Data Model
 
 ### Account
@@ -185,6 +254,33 @@ query {
 | `type` | String | `DEBIT` or `CREDIT` |
 | `expiry` | String | Expiry in `YYYY-MM` format |
 | `status` | String | `ACTIVE` or `BLOCKED` |
+
+### Notification
+| Field | Type | Description |
+|---|---|---|
+| `id` | ID | Unique notification identifier (e.g. `notif-1`) — federation `@key` |
+| `accountId` | ID | References an Account `id` |
+| `account` | Account | Resolved by the accounts subgraph via entity lookup on `accountId` |
+| `message` | String | Human-readable notification text |
+| `type` | NotificationType | `PAYMENT`, `ALERT`, or `INFO` |
+| `timestamp` | String | ISO 8601 timestamp |
+
+## GraphOS credentials
+
+Federated subscriptions require Apollo Router to be connected to GraphOS (Developer plan or above).
+
+`apollo-router/start.sh` reads `APOLLO_KEY` and `APOLLO_GRAPH_REF` from the environment, falling back to placeholder values if they are not set. Replace the placeholders by exporting the real values before running `./start.sh`, or set them in your shell profile.
+
+```bash
+export APOLLO_KEY="service:your-graph-name:xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export APOLLO_GRAPH_REF="your-graph-name@current"
+```
+
+**Getting the values from Apollo Studio:**
+
+1. Open [studio.apollographql.com](https://studio.apollographql.com) and select your graph.
+2. `APOLLO_GRAPH_REF` — shown at the top of the graph overview page in the format `<graph-id>@<variant>` (e.g. `my-graph@current`).
+3. `APOLLO_KEY` — go to **Settings → This Graph → API Keys**, create a new **Graph API Key**, and copy the value (starts with `service:`).
 
 ## Requirements
 

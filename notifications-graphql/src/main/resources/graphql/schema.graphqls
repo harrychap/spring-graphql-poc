@@ -1,0 +1,28 @@
+type Query {
+    notifications: [Notification!]!
+    notificationsByAccountId(accountId: ID!): [Notification!]!
+}
+
+type Subscription {
+    notificationAdded: Notification!
+}
+
+type Notification @key(fields: "id") {
+    id: ID!
+    accountId: ID!
+    account: Account!
+    message: String!
+    type: NotificationType!
+    timestamp: String!
+}
+
+enum NotificationType {
+    PAYMENT
+    ALERT
+    INFO
+}
+
+type Account @key(fields: "id") {
+    id: ID!
+    notifications: [Notification!]!
+}

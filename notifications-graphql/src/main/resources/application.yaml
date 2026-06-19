@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: notifications-graphql
+  graphql:
+    graphiql:
+      enabled: true
+    websocket:
+      path: /graphql
+
+server:
+  port: 8084

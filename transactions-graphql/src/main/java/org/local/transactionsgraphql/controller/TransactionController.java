@@ -1,6 +1,8 @@
 package org.local.transactionsgraphql.controller;
 
 import org.local.transactionsgraphql.model.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;
@@ -11,6 +13,8 @@ import java.util.stream.Collectors;
 
 @Controller
 public class TransactionController {
+
+    private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
 
     private static final List<Transaction> TRANSACTIONS = List.of(
         new Transaction("txn-1", "acc-1", "card-1", -49.99,  "Grocery store",    "2025-06-01"),
@@ -26,16 +30,19 @@ public class TransactionController {
 
     @QueryMapping
     public List<Transaction> transactions() {
+        log.info("Query: transactions count={}", TRANSACTIONS.size());
         return TRANSACTIONS;
     }
 
     @QueryMapping
     public Transaction transaction(@Argument String id) {
+        log.info("Query: transaction id={}", id);
         return BY_ID.get(id);
     }
 
     @QueryMapping
     public List<Transaction> transactionsByAccountId(@Argument String accountId) {
+        log.info("Query: transactionsByAccountId accountId={}", accountId);
         return TRANSACTIONS.stream()
             .filter(t -> t.accountId().equals(accountId))
             .toList();

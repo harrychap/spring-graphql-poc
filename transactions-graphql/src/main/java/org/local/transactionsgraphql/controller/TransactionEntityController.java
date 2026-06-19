@@ -3,6 +3,8 @@ package org.local.transactionsgraphql.controller;
 import org.local.transactionsgraphql.model.Account;
 import org.local.transactionsgraphql.model.Card;
 import org.local.transactionsgraphql.model.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.graphql.data.federation.EntityMapping;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
@@ -14,6 +16,8 @@ import java.util.stream.Collectors;
 
 @Controller
 public class TransactionEntityController {
+
+    private static final Logger log = LoggerFactory.getLogger(TransactionEntityController.class);
 
     private static final List<Transaction> TRANSACTIONS = List.of(
         new Transaction("txn-1", "acc-1", "card-1", -49.99,  "Grocery store",    "2025-06-01"),
@@ -29,11 +33,13 @@ public class TransactionEntityController {
 
     @EntityMapping
     public Transaction transaction(@Argument String id) {
+        log.info("EntityMapping: transaction id={}", id);
         return BY_ID.get(id);
     }
 
     @SchemaMapping(typeName = "Account", field = "transactions")
     public List<Transaction> transactions(Account account) {
+        log.info("SchemaMapping: Account.transactions accountId={}", account.id());
         return TRANSACTIONS.stream()
             .filter(t -> t.accountId().equals(account.id()))
             .toList();
@@ -41,6 +47,7 @@ public class TransactionEntityController {
 
     @SchemaMapping(typeName = "Transaction", field = "card")
     public Card card(Transaction transaction) {
+        log.info("SchemaMapping: Transaction.card transactionId={}", transaction.id());
         return transaction.cardId() != null ? new Card(transaction.cardId()) : null;
     }
 }
