@@ -14,11 +14,11 @@ type Transaction @key(fields: "id") {
     date: String!
 }
 
-type Card @key(fields: "id") @extends {
-    id: ID! @external
+type Card @key(fields: "id") {
+    id: ID!
 }
 
-type Account @key(fields: "id") @extends {
-    id: ID! @external
+type Account @key(fields: "id") {
+    id: ID!
     transactions: [Transaction!]!
 }

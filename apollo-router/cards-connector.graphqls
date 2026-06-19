@@ -1,5 +1,5 @@
 extend schema
-  @link(url: "https://specs.apollo.dev/federation/v2.10", import: ["@key", "@external", "@extends"])
+  @link(url: "https://specs.apollo.dev/federation/v2.10", import: ["@key"])
   @link(url: "https://specs.apollo.dev/connect/v0.2", import: ["@connect", "@source"])
   @source(name: "cards", http: { baseURL: "http://localhost:8083" })
 
@@ -34,8 +34,8 @@ type Card @key(fields: "id") {
   status: String!
 }
 
-type Account @key(fields: "id") @extends {
-  id: ID! @external
+type Account @key(fields: "id") {
+  id: ID!
   cards: [Card!]!
     @connect(
       source: "cards"

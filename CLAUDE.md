@@ -10,4 +10,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - [README Maintenance Standards](docs/readme-maintenance.md) — when and how to update the root-level README
 - [Spring Java App Standards](docs/spring-java-app.md) — tech stack, folder structure, controllers, federation, naming conventions
+- [GraphQL Federation Standards](docs/graphql-federation.md) — entity roles, schema patterns, controller rules, library constraints
 
