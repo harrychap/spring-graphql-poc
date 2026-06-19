@@ -18,4 +18,9 @@ public class GatewayConfig {
     public HttpGraphQlClient transactionsClient(@Value("${subgraphs.transactions-url}") String url) {
         return HttpGraphQlClient.builder(WebClient.create(url)).build();
     }
+
+    @Bean
+    public WebClient cardsWebClient(@Value("${subgraphs.cards-url}") String url) {
+        return WebClient.create(url);
+    }
 }

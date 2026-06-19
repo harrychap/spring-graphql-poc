@@ -4,6 +4,9 @@ type Query {
     transactions: [Transaction!]!
     transaction(id: ID!): Transaction
     transactionsByAccountId(accountId: ID!): [Transaction!]!
+    cards: [Card!]!
+    card(id: ID!): Card
+    cardsByAccountId(accountId: ID!): [Card!]!
 }
 
 type Account {
@@ -12,6 +15,7 @@ type Account {
     email: String!
     balance: Float!
     transactions: [Transaction!]!
+    cards: [Card!]!
 }
 
 type Transaction {
@@ -20,5 +24,15 @@ type Transaction {
     amount: Float!
     description: String!
     date: String!
+    account: Account
+}
+
+type Card {
+    id: ID!
+    accountId: ID!
+    lastFour: String!
+    type: String!
+    expiry: String!
+    status: String!
     account: Account
 }
