@@ -8,6 +8,14 @@ sandbox:
 homepage:
   enabled: false
 
+subscription:
+  enabled: true
+  mode:
+    passthrough:
+      subgraphs:
+        notifications:
+          path: /graphql
+
 cors:
   policies:
     - origins:
