@@ -1,1 +1,5 @@
 /.idea/
+
+# Apollo Router — generated artifacts
+/apollo-router/supergraph.graphql
+/apollo-router/router

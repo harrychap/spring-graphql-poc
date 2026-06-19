@@ -1,0 +1,12 @@
+federation_version: =2.14.1
+
+subgraphs:
+  accounts:
+    routing_url: http://localhost:8081/graphql
+    schema:
+      file: ../accounts-graphql/src/main/resources/graphql/schema.graphqls
+
+  transactions:
+    routing_url: http://localhost:8082/graphql
+    schema:
+      file: ../transactions-graphql/src/main/resources/graphql/schema.graphqls

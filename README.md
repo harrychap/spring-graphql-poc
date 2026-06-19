@@ -1,6 +1,6 @@
 # Spring GraphQL POC
 
-A proof-of-concept exploring GraphQL Federation with Spring Boot. Two independent subgraph services are linked via a federation gateway that composes their schemas into a unified supergraph.
+A proof-of-concept exploring GraphQL Federation with Spring Boot. Two independent subgraph services expose federated schemas that can be queried through either the Spring-based gateway or Apollo Router.
 
 ## Services
 
@@ -8,13 +8,14 @@ A proof-of-concept exploring GraphQL Federation with Spring Boot. Two independen
 |---|---|---|
 | `accounts-graphql` | 8081 | Accounts subgraph — owns the `Account` entity |
 | `transactions-graphql` | 8082 | Transactions subgraph — owns `Transaction`, extends `Account` with `transactions` |
-| `spring-router-graphql` | 8080 | Federation gateway — composes both subgraphs into a unified API |
+| `spring-router-graphql` | 8080 | Spring-based federation gateway — manually proxies queries to each subgraph |
+| `apollo-router` | 4000 | Apollo Router — production-grade federation router that composes the subgraphs automatically |
 
-`Account.id` is the federation join key: the gateway uses it to navigate from transactions back to account data and vice versa.
+`Account.id` is the federation join key: the router uses it to navigate from transactions back to account data and vice versa.
 
 ## Running
 
-Start all three services in separate terminals. The subgraphs must be running before the gateway starts making requests.
+Start the subgraphs first. Both gateway options depend on them.
 
 **Accounts subgraph**
 ```bash
@@ -28,25 +29,47 @@ cd transactions-graphql
 ./gradlew bootRun
 ```
 
-**Gateway**
+Then start whichever gateway you want to use:
+
+**Apollo Router**
+```bash
+cd apollo-router
+./start.sh
+```
+
+`start.sh` composes the supergraph from the subgraph SDL files and starts the router. The Apollo Router binary is downloaded automatically on first run.
+
+**Spring gateway**
 ```bash
 cd spring-router-graphql
 ./gradlew bootRun
 ```
 
-## GraphiQL
+## Interactive querying
 
-All services expose GraphiQL for interactive querying:
+**Apollo Router** serves Apollo Sandbox at http://localhost:4000
 
-- Gateway (unified): http://localhost:8080/graphiql
-- Accounts subgraph: http://localhost:8081/graphiql
-- Transactions subgraph: http://localhost:8082/graphiql
+**Spring gateway** serves GraphiQL at http://localhost:8080/graphiql
+
+The subgraphs also expose GraphiQL directly:
+- Accounts: http://localhost:8081/graphiql
+- Transactions: http://localhost:8082/graphiql
 
 ## Example Queries
 
-Send these to the gateway at http://localhost:8080/graphiql.
+**List all accounts** — works via Apollo Router and Spring gateway
+```graphql
+query {
+  accounts {
+    id
+    name
+    email
+    balance
+  }
+}
+```
 
-**Account with its transactions (cross-service)**
+**Account with its transactions (cross-service)** — works via Apollo Router and Spring gateway
 ```graphql
 query {
   account(id: "acc-1") {
@@ -63,7 +86,32 @@ query {
 }
 ```
 
-**Transaction with its account (cross-service)**
+**List all transactions** — works via Apollo Router and Spring gateway
+```graphql
+query {
+  transactions {
+    id
+    accountId
+    amount
+    description
+    date
+  }
+}
+```
+
+**Transactions for a specific account** — works via Apollo Router and Spring gateway
+```graphql
+query {
+  transactionsByAccountId(accountId: "acc-1") {
+    id
+    amount
+    description
+    date
+  }
+}
+```
+
+**Transaction with its account (cross-service)** — Spring gateway only
 ```graphql
 query {
   transaction(id: "txn-3") {
@@ -78,42 +126,7 @@ query {
 }
 ```
 
-**List all accounts**
-```graphql
-query {
-  accounts {
-    id
-    name
-    email
-    balance
-  }
-}
-```
-
-**List all transactions**
-```graphql
-query {
-  transactions {
-    id
-    accountId
-    amount
-    description
-    date
-  }
-}
-```
-
-**Transactions for a specific account**
-```graphql
-query {
-  transactionsByAccountId(accountId: "acc-1") {
-    id
-    amount
-    description
-    date
-  }
-}
-```
+> `Transaction.account` is only available through the Spring gateway. It is not declared in any subgraph schema so Apollo Router does not expose it.
 
 ## Data Model
 
@@ -134,18 +147,17 @@ query {
 | `amount` | Float | Positive for credits, negative for debits |
 | `description` | String | Human-readable description |
 | `date` | String | Date in `YYYY-MM-DD` format |
-| `account` | Account | Resolved by the accounts subgraph via `_entities` |
+| `account` | Account | Spring gateway only — resolved by the accounts subgraph via `_entities` |
 
 ## Requirements
 
-- Java 25
-- No additional setup required — dependencies are fetched by Gradle on first run
+- Java 25 — no additional setup for Spring services; dependencies are fetched by Gradle on first run
+- Apollo Router: `rover` must be installed (`curl -sSL https://rover.apollo.dev/nix/latest | sh`); the router binary is downloaded automatically by `start.sh` on first run
 
 ## Federation Architecture
 
-Each subgraph uses `federation-graphql-java-support` to expose `_service { sdl }` and `_entities` endpoints. The `@EntityMapping` annotation in each controller handles entity resolution when the gateway calls `_entities` with a list of typed representations (e.g. `{__typename: "Account", id: "acc-1"}`).
+Each subgraph uses `federation-graphql-java-support` to expose `_service { sdl }` and `_entities` endpoints. The `@EntityMapping` annotation in each controller handles entity resolution when a router calls `_entities` with a list of typed representations (e.g. `{__typename: "Account", id: "acc-1"}`).
 
-The gateway (`spring-router-graphql`) is a WebFlux app that:
-1. Routes top-level queries to the appropriate subgraph via `HttpGraphQlClient`
-2. Resolves `Account.transactions` by calling `_entities` on the transactions subgraph
-3. Resolves `Transaction.account` by calling `_entities` on the accounts subgraph
+**Apollo Router** reads the subgraph SDL files at startup via `rover supergraph compose`, produces a composed supergraph schema, and handles all cross-subgraph query planning and entity resolution automatically.
+
+**Spring gateway** (`spring-router-graphql`) is a WebFlux app that manually routes queries to each subgraph via `HttpGraphQlClient` and explicitly wires cross-service field resolution in its controllers.
