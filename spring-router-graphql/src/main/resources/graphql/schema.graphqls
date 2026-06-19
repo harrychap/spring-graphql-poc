@@ -1,0 +1,24 @@
+type Query {
+    accounts: [Account!]!
+    account(id: ID!): Account
+    transactions: [Transaction!]!
+    transaction(id: ID!): Transaction
+    transactionsByAccountId(accountId: ID!): [Transaction!]!
+}
+
+type Account {
+    id: ID!
+    name: String!
+    email: String!
+    balance: Float!
+    transactions: [Transaction!]!
+}
+
+type Transaction {
+    id: ID!
+    accountId: ID!
+    amount: Float!
+    description: String!
+    date: String!
+    account: Account
+}

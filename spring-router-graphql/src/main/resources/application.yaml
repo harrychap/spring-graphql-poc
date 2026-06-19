@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: spring-router-graphql
+  graphql:
+    graphiql:
+      enabled: true
+
+server:
+  port: 8080
+
+subgraphs:
+  accounts-url: http://localhost:8081/graphql
+  transactions-url: http://localhost:8082/graphql

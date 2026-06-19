@@ -1,5 +1,6 @@
-package org.local.transactionsgraphql;
+package org.local.transactionsgraphql.controller;
 
+import org.local.transactionsgraphql.model.Transaction;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.stereotype.Controller;

@@ -4,10 +4,15 @@ type Query {
     transactionsByAccountId(accountId: ID!): [Transaction!]!
 }
 
-type Transaction {
+type Transaction @key(fields: "id") {
     id: ID!
     accountId: ID!
     amount: Float!
     description: String!
     date: String!
+}
+
+type Account @key(fields: "id") @extends {
+    id: ID! @external
+    transactions: [Transaction!]!
 }
