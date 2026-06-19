@@ -7,9 +7,15 @@ type Query {
 type Transaction @key(fields: "id") {
     id: ID!
     accountId: ID!
+    cardId: ID
+    card: Card
     amount: Float!
     description: String!
     date: String!
+}
+
+type Card @key(fields: "id") @extends {
+    id: ID! @external
 }
 
 type Account @key(fields: "id") @extends {

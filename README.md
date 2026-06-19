@@ -7,7 +7,7 @@ A proof-of-concept exploring GraphQL Federation with Spring Boot. Subgraph servi
 | Service | Port | Description |
 |---|---|---|
 | `accounts-graphql` | 8081 | Accounts subgraph — owns the `Account` entity |
-| `transactions-graphql` | 8082 | Transactions subgraph — owns `Transaction`, extends `Account` with `transactions` |
+| `transactions-graphql` | 8082 | Transactions subgraph — owns `Transaction`, extends `Account` with `transactions`, references `Card` entity |
 | `cards-rest` | 8083 | Cards REST API — serves card data linked to accounts |
 | `apollo-router` | 4000 | Apollo Router — federation router that composes the GraphQL subgraphs |
 
@@ -107,6 +107,23 @@ query {
 }
 ```
 
+**Transaction with its card (cross-service)**
+```graphql
+query {
+  transaction(id: "txn-1") {
+    id
+    amount
+    description
+    cardId
+    card {
+      lastFour
+      type
+      status
+    }
+  }
+}
+```
+
 **Cards for an account (cross-service)**
 ```graphql
 query {
@@ -154,6 +171,8 @@ query {
 |---|---|---|
 | `id` | ID | Unique transaction identifier (e.g. `txn-1`) — federation `@key` |
 | `accountId` | ID | References an Account `id` |
+| `cardId` | ID | References a Card `id`; `null` for non-card transactions (e.g. salary deposits) |
+| `card` | Card | Resolved by the cards subgraph via entity lookup on `cardId` |
 | `amount` | Float | Positive for credits, negative for debits |
 | `description` | String | Human-readable description |
 | `date` | String | Date in `YYYY-MM-DD` format |
